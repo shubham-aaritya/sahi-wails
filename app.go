@@ -3,25 +3,50 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// App struct
 type App struct {
 	ctx context.Context
 }
 
-// NewApp creates a new App application struct
 func NewApp() *App {
 	return &App{}
 }
 
-// startup is called when the app starts. The context is saved
-// so we can call the runtime methods
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
+func (a *App) ProcessFiles(nsePath, bsePath, cdslPath string) (string, error) {
+	nseUCCs, err := loadNSEUCCs(nsePath)
+	if err != nil {
+		runtime.LogErrorf(a.ctx, "Error loading NSE file: %v", err)
+		return "", err
+	}
+
+	bseUCCs, err := loadBSEUCCs(bsePath)
+	if err != nil {
+		return "", err
+	}
+
+	records, err := processCDSL(cdslPath, nseUCCs, bseUCCs)
+	if err != nil {
+		return "", err
+	}
+
+	outputPath := filepath.Join(os.TempDir(), "boid_cm_filtered_output.csv")
+	if err := writeCSV(records, outputPath); err != nil {
+		return "", err
+	}
+
+	return outputPath, nil
 }
 
-// Greet returns a greeting for the given name
-func (a *App) Greet(name string) string {
-	return fmt.Sprintf("Hello %s, It's show time!", name)
+func (a *App) SaveFile(path string, data []byte) error {
+	fmt.Println("Saving file to:", path)
+	return os.WriteFile(path, data, 0644)
+}
+
+func (a *App) startup(ctx context.Context) {
+	a.ctx = ctx
 }
