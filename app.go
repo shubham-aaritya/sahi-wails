@@ -47,6 +47,20 @@ func (a *App) SaveFile(path string, data []byte) error {
 	return os.WriteFile(path, data, 0644)
 }
 
+func (a *App) MoveToDownloads(tempPath string) (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	downloadsPath := filepath.Join(homeDir, "Downloads", "ucc_recon_output.csv")
+
+	err = os.Rename(tempPath, downloadsPath)
+	if err != nil {
+		return "", err
+	}
+	return downloadsPath, nil
+}
+
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
